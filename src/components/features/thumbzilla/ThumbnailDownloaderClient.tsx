@@ -10,8 +10,9 @@ import { Download, Loader2, Youtube, Lightbulb, AlertCircle, ExternalLink } from
 import { extractVideoId, generateThumbnailUrls, type ThumbnailInfo } from '@/lib/youtube-utils';
 import { ThumbnailCard } from './ThumbnailCard';
 import type { SuggestBestThumbnailOutput } from '@/ai/flows/suggest-thumbnail';
-import { suggestBestThumbnail } from '@/ai/flows/suggest-thumbnail'; // Ensure this path is correct
+import { suggestBestThumbnail } from '@/ai/flows/suggest-thumbnail';
 import { useToast } from "@/hooks/use-toast";
+import AdSenseBlock from '@/components/ads/AdSenseBlock';
 
 
 const AppLogo = () => (
@@ -30,6 +31,12 @@ export function ThumbnailDownloaderClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // IMPORTANT: Replace these with your actual AdSense details
+  const AD_CLIENT_ID = "ca-pub-YOUR_PUBLISHER_ID"; 
+  const AD_SLOT_ID_TOP = "YOUR_AD_SLOT_ID_1";
+  const AD_SLOT_ID_MIDDLE = "YOUR_AD_SLOT_ID_2";
+  const AD_SLOT_ID_FOOTER = "YOUR_AD_SLOT_ID_3";
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -56,7 +63,6 @@ export function ThumbnailDownloaderClient() {
     const generatedThumbnails = generateThumbnailUrls(extractedId);
     setThumbnails(generatedThumbnails);
 
-    // AI Suggestion
     try {
       const thumbnailUrlList = generatedThumbnails.map(t => t.url);
       if (thumbnailUrlList.length > 0) {
@@ -92,12 +98,12 @@ export function ThumbnailDownloaderClient() {
       URL.revokeObjectURL(blobUrl);
     } catch (err) {
       console.error('Download failed:', err);
-      window.open(url, '_blank');
       toast({
         title: "Download Error",
-        description: "Could not download image directly. Opening in new tab.",
+        description: `Could not download image directly. Opening in new tab. Error: ${err instanceof Error ? err.message : String(err)}`,
         variant: "destructive",
       });
+      window.open(url, '_blank');
     }
   };
 
@@ -128,6 +134,10 @@ export function ThumbnailDownloaderClient() {
         </Button>
       </form>
 
+      <div className="my-6 md:my-8">
+        <AdSenseBlock adClient={AD_CLIENT_ID} adSlot={AD_SLOT_ID_TOP} placeholderHeight="100px" />
+      </div>
+
       {error && !isLoading && (
          <Alert variant="destructive" className="mb-8 animate-shake">
           <AlertCircle className="h-4 w-4" />
@@ -150,13 +160,14 @@ export function ThumbnailDownloaderClient() {
               <Image
                 src={suggestedThumbnail.bestThumbnailUrl}
                 alt="AI suggested best thumbnail"
-                layout="fill"
-                objectFit="cover"
-                className="transform hover:scale-105 transition-transform duration-300"
+                fill // Use fill for responsive layout
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="object-cover transform hover:scale-105 transition-transform duration-300"
                 data-ai-hint="ai suggestion"
                 unoptimized
                  onError={(e) => {
                   (e.target as HTMLImageElement).src = `https://placehold.co/640x360.png`;
+                  (e.target as HTMLImageElement).srcset = "";
                 }}
               />
             </div>
@@ -177,6 +188,13 @@ export function ThumbnailDownloaderClient() {
           </CardContent>
         </Card>
       )}
+      
+      {thumbnails.length > 0 && videoId && (
+         <div className="my-6 md:my-8">
+            <AdSenseBlock adClient={AD_CLIENT_ID} adSlot={AD_SLOT_ID_MIDDLE} adFormat="fluid" placeholderHeight="120px" />
+         </div>
+      )}
+
 
       {thumbnails.length > 0 && videoId && (
         <>
@@ -190,6 +208,9 @@ export function ThumbnailDownloaderClient() {
       )}
       
       <footer className="mt-12 text-center text-sm text-muted-foreground">
+        <div className="my-6 md:my-8">
+            <AdSenseBlock adClient={AD_CLIENT_ID} adSlot={AD_SLOT_ID_FOOTER} placeholderHeight="90px" />
+        </div>
         <p>&copy; {new Date().getFullYear()} Thumbzilla. All rights reserved.</p>
         <p className="mt-1">
           View YouTube video: {videoId && <a href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline"><ExternalLink className="inline h-4 w-4 ml-1"/> Link</a>}
