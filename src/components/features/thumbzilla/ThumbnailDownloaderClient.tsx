@@ -80,7 +80,7 @@ export function ThumbnailDownloaderClient() {
     event.preventDefault();
     try {
       const response = await fetch(url);
-      if (!response.ok) throw new Error(`Failed to fetch image. Status: ${response.status}`);
+      if (!response.ok) throw new Error(`Failed to fetch image. Status: ${response.status} ${response.statusText}`);
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -153,9 +153,10 @@ export function ThumbnailDownloaderClient() {
                 layout="fill"
                 objectFit="cover"
                 className="transform hover:scale-105 transition-transform duration-300"
+                data-ai-hint="ai suggestion"
                 unoptimized
                  onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://placehold.co/640x360.png?text=AI+Suggestion+Error`;
+                  (e.target as HTMLImageElement).src = `https://placehold.co/640x360.png`;
                 }}
               />
             </div>

@@ -18,7 +18,7 @@ export function ThumbnailCard({ thumbnail, videoId }: ThumbnailCardProps) {
       // Fetch the image as a blob
       const response = await fetch(thumbnail.url);
       if (!response.ok) {
-        throw new Error(`Failed to fetch image. Status: ${response.status}`);
+        throw new Error(`Failed to fetch image. Status: ${response.status} ${response.statusText}`);
       }
       const blob = await response.blob();
       
@@ -60,7 +60,7 @@ export function ThumbnailCard({ thumbnail, videoId }: ThumbnailCardProps) {
           unoptimized // YouTube images are already optimized
           onError={(e) => {
             // Handle broken images - you could set a placeholder or hide it
-            (e.target as HTMLImageElement).src = `https://placehold.co/${thumbnail.width}x${thumbnail.height}.png?text=Not+Available`;
+            (e.target as HTMLImageElement).src = `https://placehold.co/${thumbnail.width}x${thumbnail.height}.png`;
           }}
         />
       </CardContent>
