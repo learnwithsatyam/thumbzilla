@@ -1,7 +1,7 @@
 // src/components/ads/AdSenseBlock.tsx
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { cn } from '@/lib/utils';
 
 interface AdSenseBlockProps {
@@ -23,17 +23,9 @@ export function AdSenseBlock({
   responsive = true,
   placeholderHeight = '90px',
 }: AdSenseBlockProps) {
-  useEffect(() => {
-    // This effect attempts to initialize ads if the AdSense script is loaded.
-    // AdSense usually handles this automatically when it finds <ins> tags.
-    try {
-      if (typeof window !== 'undefined' && (window as any).adsbygoogle) {
-        ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
-      }
-    } catch (e) {
-      console.error('AdSense push error:', e);
-    }
-  }, [adClient, adSlot, adFormat]); // Re-run if key ad props change
+  // The useEffect that previously called adsbygoogle.push({}) has been removed.
+  // AdSense typically initializes ads automatically when the main script loads
+  // and finds <ins> tags with the class "adsbygoogle".
 
   if (!adClient || !adSlot || adClient === "ca-pub-YOUR_PUBLISHER_ID" || adSlot.startsWith("YOUR_AD_SLOT_ID")) {
     return (
