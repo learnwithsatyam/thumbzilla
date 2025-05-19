@@ -18,7 +18,7 @@ export function ThumbnailCard({ thumbnail, videoId }: ThumbnailCardProps) {
       // Fetch the image as a blob
       const response = await fetch(thumbnail.url);
       if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.statusText}`);
+        throw new Error(`Failed to fetch image. Status: ${response.status}`);
       }
       const blob = await response.blob();
       

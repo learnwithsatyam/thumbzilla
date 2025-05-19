@@ -80,7 +80,7 @@ export function ThumbnailDownloaderClient() {
     event.preventDefault();
     try {
       const response = await fetch(url);
-      if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
+      if (!response.ok) throw new Error(`Failed to fetch image. Status: ${response.status}`);
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
