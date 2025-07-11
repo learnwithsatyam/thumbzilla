@@ -8,9 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Download, Loader2, Youtube, Lightbulb, AlertCircle, ExternalLink } from 'lucide-react';
 import { extractVideoId, generateThumbnailUrls, type ThumbnailInfo } from '@/lib/youtube-utils';
-import { ThumbnailCard } from './ThumbnailCard';
-import type { SuggestBestThumbnailOutput } from '@/ai/flows/suggest-thumbnail';
-import { suggestBestThumbnail } from '@/ai/flows/suggest-thumbnail';
+import { ThumbnailCard } from '@/components/features/thumbzilla/ThumbnailCard';
 import { useToast } from "@/hooks/use-toast";
 import AdSenseBlock from '@/components/ads/AdSenseBlock';
 
@@ -27,9 +25,7 @@ export function ThumbnailDownloaderClient() {
   const [videoUrl, setVideoUrl] = useState('');
   const [videoId, setVideoId] = useState<string | null>(null);
   const [thumbnails, setThumbnails] = useState<ThumbnailInfo[]>([]);
-  const [suggestedThumbnail, setSuggestedThumbnail] = useState<SuggestBestThumbnailOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   // IMPORTANT: Replace these with your actual AdSense details
@@ -41,16 +37,13 @@ export function ThumbnailDownloaderClient() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
-    setError(null);
     setThumbnails([]);
-    setSuggestedThumbnail(null);
     setVideoId(null);
 
     const extractedId = extractVideoId(videoUrl);
 
     if (!extractedId) {
       setError('Invalid YouTube URL. Please enter a valid YouTube video link.');
-      setIsLoading(false);
       toast({
         title: "Error",
         description: "Invalid YouTube URL provided.",
@@ -58,32 +51,13 @@ export function ThumbnailDownloaderClient() {
       });
       return;
     }
+    setIsLoading(false); // Moved loading state update here
     
     setVideoId(extractedId);
     const generatedThumbnails = generateThumbnailUrls(extractedId);
     setThumbnails(generatedThumbnails);
 
-    try {
-      const thumbnailUrlList = generatedThumbnails.map(t => t.url);
-      if (thumbnailUrlList.length > 0) {
-        const suggestion = await suggestBestThumbnail({ thumbnailUrls: thumbnailUrlList });
-        setSuggestedThumbnail(suggestion);
-      }
-    } catch (aiError) {
-      console.error('AI suggestion failed:', aiError);
-      setError('Thumbnails loaded, but AI suggestion failed. You can still download thumbnails.');
-      toast({
-        title: "AI Suggestion Error",
-        description: "Could not get AI thumbnail suggestion.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDownloadSuggested = async (event: React.MouseEvent<HTMLAnchorElement>, url: string) => {
-    event.preventDefault();
+    const downloadImage = async (url: string, filename: string) => {
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`Failed to fetch image. Status: ${response.status} ${response.statusText}`);
@@ -91,7 +65,7 @@ export function ThumbnailDownloaderClient() {
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `${videoId}-ai-suggested.jpg`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -106,6 +80,9 @@ export function ThumbnailDownloaderClient() {
       window.open(url, '_blank');
     }
   };
+  };
+
+
 
 
   return (
@@ -138,57 +115,7 @@ export function ThumbnailDownloaderClient() {
         <AdSenseBlock adClient={AD_CLIENT_ID} adSlot={AD_SLOT_ID_TOP} placeholderHeight="100px" />
       </div>
 
-      {error && !isLoading && (
-         <Alert variant="destructive" className="mb-8 animate-shake">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
-      {suggestedThumbnail && videoId && (
-        <Card className="mb-12 bg-card border-primary shadow-2xl animate-fadeIn" data-ai-hint="suggestion card">
-          <CardHeader className="pb-2">
-            <div className="flex items-center">
-              <Lightbulb className="h-6 w-6 mr-2 text-primary" />
-              <CardTitle className="text-2xl font-semibold text-primary">AI Thumbnail Suggestion</CardTitle>
-            </div>
-            <CardDescription className="text-muted-foreground pt-1">Our AI thinks this is the best thumbnail for your video:</CardDescription>
-          </CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-6 items-center p-6">
-            <div className="aspect-video relative rounded-lg overflow-hidden shadow-md">
-              <Image
-                src={suggestedThumbnail.bestThumbnailUrl}
-                alt="AI suggested best thumbnail"
-                fill // Use fill for responsive layout
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                className="object-cover transform hover:scale-105 transition-transform duration-300"
-                data-ai-hint="ai suggestion"
-                unoptimized
-                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://placehold.co/640x360.png`;
-                  (e.target as HTMLImageElement).srcset = "";
-                }}
-              />
-            </div>
-            <div>
-              <p className="text-sm text-foreground mb-4 leading-relaxed">{suggestedThumbnail.reason}</p>
-              <Button asChild variant="outline" className="w-full border-primary text-primary hover:bg-primary/10">
-                <a 
-                  href={suggestedThumbnail.bestThumbnailUrl} 
-                  onClick={(e) => handleDownloadSuggested(e, suggestedThumbnail.bestThumbnailUrl)}
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Suggested
-                </a>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
       {thumbnails.length > 0 && videoId && (
          <div className="my-6 md:my-8">
             <AdSenseBlock adClient={AD_CLIENT_ID} adSlot={AD_SLOT_ID_MIDDLE} adFormat="fluid" placeholderHeight="120px" />
